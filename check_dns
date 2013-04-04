@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+###############################################################################
+# * ========================== GPL License =====================================
+# * This program is free software; you can redistribute it and/or modify
+# * it under the terms of the GNU General Public License as published by
+# * the Free Software Foundation; either version 2 of the License, or
+# * (at your option) any later version.
+# *
+# * This program is distributed in the hope that it will be useful,
+# * but WITHOUT ANY WARRANTY; without even the implied warranty of
+# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# * GNU Library General Public License for more details.
+# *
+# * You should have received a copy of the GNU General Public License
+# * along with this program; if not, write to the Free Software
+# * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# * ============================================================================
+###############################################################################
+#
+# Author: Emiliano Castagnari (<ecastag@gmail.com>)
+#
+###############################################################################
+#
+# TODO / FIXME:
+# - try / except for dns not responding
+# - expect SOA.serial
+
+STATE = {
+	:ok        => 0,
+	:warning   => 1,
+	:critical  => 2,
+	:unknown   => 3,
+	:dependent => 4
+}
+
+VERBOSE=false
+
+JSON_OPTS='./check_dns.json'
+
+###############################################################################
+
+require 'rubygems'
+require 'dnsruby'
+
+$: << File.expand_path('./lib')
+
+require 'getoptions'
+
+###############################################################################
+
+# If averything goes ok, return STATE[:ok]
+state = STATE[:ok]
+
+args = GetOpts.parse(ARGV, JSON_OPTS)
+
+# Verify that a domain name has been provided through -d / --domain
+if ! args[:domain]
+	print " An FQDN is expected to be verified\n"
+	exit STATE[:unknown]
+end
+domain = args[:domain]
+
+# Verify that namerservers are present -n / --nameservers
+if ! args[:dns]
+	print " You must specify one or more nameservers (comma separated)\n"
+	exit STATE[:unknown]
+end
+nameservers = args[:dns].split(',')
+
+nameservers.each do |ns|
+	Dnsruby::DNS.open(config_info = { :nameserver => ns } ) { |dns|
+		dns.each_resource(domain, 'SOA', ) { |rr| 
+			print "SOA \t#{rr}\n" if args[:verbose]
+			print "Serial \t#{ns}\t#{rr.serial}\n"
+			if(args[:authority] != nil)
+				state = (args[:authority] == rr.mname) ? STATE[:ok] : STATE[:warning]
+			end
+		}
+	}
+end
+
+exit state

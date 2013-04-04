@@ -1,0 +1,29 @@
+{
+	"domain": {
+		"short": "-d",
+		"long":  "--domain MANDATORY",
+		"desc":  "Fully Qualified Domain Name",
+		"value": null
+		},
+
+	"dns": {
+		"short": "-n",
+		"long":  "--nameservers MANDATORY",
+		"desc":  "comma separated list of nameservers",
+		"value": null
+		},
+
+	"authority": {
+		"short": "-a",
+		"long":  "--authority MANDATORY",
+		"desc":  "Expected authority",
+		"value": null
+		},
+
+	"verbose": {
+		"short": "-v",
+		"long":  "--verbose",
+		"desc":  "Be verbose",
+		"value": false
+		}
+}
