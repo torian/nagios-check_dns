@@ -33,8 +33,6 @@ STATE = {
 	:dependent => 4
 }
 
-VERBOSE=false
-
 JSON_OPTS='./check_dns.json'
 
 ###############################################################################
@@ -67,16 +65,37 @@ if ! args[:dns]
 end
 nameservers = args[:dns].split(',')
 
+msg = {}
+
 nameservers.each do |ns|
 	Dnsruby::DNS.open(config_info = { :nameserver => ns } ) { |dns|
 		dns.each_resource(domain, 'SOA', ) { |rr| 
-			print "SOA \t#{rr}\n" if args[:verbose]
-			print "Serial \t#{ns}\t#{rr.serial}\n"
+			print "SOA \t#{rr}\n"                  if args[:verbose]
+			print "serial \t#{ns}\t#{rr.serial}\n" if args[:verbose]
+			print "auth   \t#{ns}\t#{rr.mname}\n"  if args[:verbose]
+			if(args[:serial] != nil)
+				if(args[:serial].to_s == rr.serial.to_s)
+					state   = STATE[:ok]
+					msg[ns] = "serial OK"
+				else
+					state   = STATE[:warning]
+					msg[ns] = "serial FAIL"
+				end
+			end
 			if(args[:authority] != nil)
-				state = (args[:authority] == rr.mname) ? STATE[:ok] : STATE[:warning]
+				if(args[:authority].to_s == rr.mname.to_s)
+					state   = STATE[:ok]
+					msg[ns] = msg[ns].empty?() ? "auth OK" : "#{msg[ns]}|auth OK" 
+				else
+					state = STATE[:warning]
+					msg[ns] = msg[ns].empty?() ? "auth FAIL" : "#{msg[ns]}|auth FAIL" 
+				end
 			end
 		}
 	}
 end
 
+output = ""
+msg.each { |k,v| output = "#{output}#{k}: #{v}\n" }
+print output
 exit state

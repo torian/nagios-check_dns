@@ -20,6 +20,13 @@
 		"value": null
 		},
 
+	"serial": {
+		"short": "-s",
+		"long":  "--serial MANDATORY",
+		"desc":  "Expected serial #",
+		"value": null
+		},
+
 	"verbose": {
 		"short": "-v",
 		"long":  "--verbose",
