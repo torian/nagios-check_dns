@@ -73,22 +73,23 @@ nameservers.each do |ns|
 			print "SOA \t#{rr}\n"                  if args[:verbose]
 			print "serial \t#{ns}\t#{rr.serial}\n" if args[:verbose]
 			print "auth   \t#{ns}\t#{rr.mname}\n"  if args[:verbose]
+			msg[ns] = { :auth => nil, :serial => nil }
 			if(args[:serial] != nil)
 				if(args[:serial].to_s == rr.serial.to_s)
-					state   = STATE[:ok]
-					msg[ns] = "serial OK"
+					state = STATE[:ok]
+					msg[ns][:serial] = true
 				else
-					state   = STATE[:warning]
-					msg[ns] = "serial FAIL"
+					state = STATE[:warning]
+					msg[ns][:serial] = false
 				end
 			end
 			if(args[:authority] != nil)
 				if(args[:authority].to_s == rr.mname.to_s)
 					state   = STATE[:ok]
-					msg[ns] = msg[ns].empty?() ? "auth OK" : "#{msg[ns]}|auth OK" 
+					msg[ns][:auth] = true
 				else
 					state = STATE[:warning]
-					msg[ns] = msg[ns].empty?() ? "auth FAIL" : "#{msg[ns]}|auth FAIL" 
+					msg[ns][:auth] = false
 				end
 			end
 		}
@@ -96,6 +97,16 @@ nameservers.each do |ns|
 end
 
 output = ""
-msg.each { |k,v| output = "#{output}#{k}: #{v}\n" }
+msg.each { |k,v|
+	if(msg[k][:serial] && msg[k][:auth])
+		output = "#{output}#{k}: OK\n"
+	elsif(msg[k][:serial] && ! msg[k][:auth])
+		output = "#{output}#{k}: auth FAIL\n"
+	elsif(! msg[k][:serial] && msg[k][:auth])
+		output = "#{output}#{k}: serial FAIL\n"
+	elsif(! msg[k][:serial] && ! msg[k][:auth])
+		output = "#{output}#{k}: serial && auth FAIL\n"
+	end
+}	
 print output
 exit state
